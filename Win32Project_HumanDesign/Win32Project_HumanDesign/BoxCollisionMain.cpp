@@ -368,22 +368,16 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 				rotatePoint(xA, yA, centerAx, centerAy, degree*dt);
 				rotatePoint(xB, yB, centerBx, centerBy, degree*dt);
 
-
-
-
-				
-
-
 				float xmA[4], ymA[4], xmB[4], ymB[4];
 				//memcpy(xmA, xA, sizeof(xmA)); memcpy(ymA, yA, sizeof(ymA)); memcpy(xmB, xB, sizeof(xmB)); memcpy(ymB, yB, sizeof(ymB));
 				for (int i = 0; i < 4; ++i)
 				{
-					xmA[i] = (gijunHX*xA[i] - gijunHY*yA[i]) / (sqrt(pow(gijunHX, 2) + pow(gijunHY, 2)));
-					xmB[i] = (gijunHX*xB[i] - gijunHY*yB[i]) / (sqrt(pow(gijunHX, 2) + pow(gijunHY, 2)));
+					xmA[i] = (gijunVY*xA[i] - gijunVX*yA[i]) / (sqrt(pow(gijunVX, 2) + pow(gijunVY, 2)));
+					xmB[i] = (gijunVY*xB[i] - gijunVX*yB[i]) / (sqrt(pow(gijunVX, 2) + pow(gijunVY, 2)));
 
 
-					ymA[i] = (gijunVX*xA[i] - gijunVY*yA[i]) / (sqrt(pow(gijunVX, 2) + pow(gijunVY, 2)));
-					ymB[i] = (gijunVX*xB[i] - gijunVY*yB[i]) / (sqrt(pow(gijunVX, 2) + pow(gijunVY, 2)));
+					ymA[i] = (gijunHY*xA[i] - gijunHX*yA[i]) / (sqrt(pow(gijunHX, 2) + pow(gijunHY, 2)));
+					ymB[i] = (gijunHY*xB[i] - gijunHX*yB[i]) / (sqrt(pow(gijunHX, 2) + pow(gijunHY, 2)));
 				}				//충돌시
 				if (((xmA[0] - xmB[0]) >= -widthA && (xmA[0] - xmB[0]) <= widthB) && ((ymB[0] - ymA[0]) >= -heightB && (ymB[0] - ymA[0]) <= heightA))
 				{
@@ -401,10 +395,30 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 					MoveToEx(memoryDC, xB[i], yB[i], nullptr);
 					LineTo(memoryDC, xB[(i + 1) % 4], yB[(i + 1) % 4]);
 				}
-				MoveToEx(memoryDC, 0, 0, nullptr);
-				LineTo(memoryDC, gijunHX, gijunHY);
+				SelectObject(memoryDC, GetStockObject(DC_PEN));
+				//기준축 그린다
+				SetDCPenColor(memoryDC, RGB(0, 0, 255));
 				MoveToEx(memoryDC, 0, 0, nullptr);
 				LineTo(memoryDC, gijunVX, gijunVY);
+				MoveToEx(memoryDC, 0, 0, nullptr);
+				LineTo(memoryDC, gijunHX, gijunHY);
+				//변환한거 그린다
+				if (g_myInput.GetKey(VK_SPACE))
+				{
+					SetDCPenColor(memoryDC, RGB(0, 255, 0));
+					for (int i = 0; i < 4; ++i)
+					{
+						MoveToEx(memoryDC, xmA[i], ymA[i], nullptr);
+						LineTo(memoryDC, xmA[(i + 1) % 4], ymA[(i + 1) % 4]);
+					}
+					for (int i = 0; i < 4; ++i)
+					{
+						MoveToEx(memoryDC, xmB[i], ymB[i], nullptr);
+						LineTo(memoryDC, xmB[(i + 1) % 4], ymB[(i + 1) % 4]);
+					}
+				}
+				TextOut(memoryDC, 400, 20, L"스페이스바를 눌러보라", wcslen(L"스페이스바를 눌러보라"));
+				
 			}
 			break;
 			}//end of switch
