@@ -4,8 +4,10 @@
 #include <atlimage.h>
 #include "MyTime.h"
 #include "MyInput.h"
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <string>
+
 
 #define szWindowClass	TEXT("First")
 #define szTitle			TEXT("First App")
@@ -45,11 +47,15 @@ char g_cntAnimation_ExplosionJ = 0;
 int g_randrandX = 0;
 int g_randrandY = 0;
 
+bool g_FirstGogigogi = true;
+float g_gogigogiX, g_gogigogiY;
+
 enum MODEMODE{
 	MODEMODE_LINELINE,
 	MODEMODE_BOXBOX,
 	MODEMODE_CIRCLECIRCLE,
-	MODEMODE_BOXCIRCLE
+	MODEMODE_BOXCIRCLE,
+	MODEMODE_ROTATINGBOX
 };
 MODEMODE g_modeMode;
 
@@ -218,6 +224,8 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 				g_modeMode = MODEMODE_CIRCLECIRCLE;
 			else if (g_myInput.GetKey(VK_V))
 				g_modeMode = MODEMODE_BOXCIRCLE;
+			else if (g_myInput.GetKey(VK_B))
+				g_modeMode = MODEMODE_ROTATINGBOX;
 			switch (g_modeMode)
 			{
 			case MODEMODE_LINELINE:
@@ -284,7 +292,7 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 				float startCx = cx - r, startCy = cy - r;
 				float daegakseon = sqrt(pow(width, 2) + pow(height, 2));
 				float xx1 = bx, yy1 = by, xx2 = bx + width, yy2 = by, xx3 = bx, yy3 = by + height, xx4 = bx + width, yy4 = by + height;
-				if ((bx < startCx+r*2 && bx + width > startCx) && (by < startCy + 2 * r && by + height > startCy))
+				if ((bx < startCx + r * 2 && bx + width > startCx) && (by < startCy + 2 * r && by + height > startCy))
 				{
 					if ((cx < bx || cx>bx + width) && (cy<by || cy>by + height))
 						if (!((두점사이의거리(cx, cy, xx1, yy1) < r) || (두점사이의거리(cx, cy, xx2, yy2) < r) || (두점사이의거리(cx, cy, xx3, yy3) < r) || (두점사이의거리(cx, cy, xx4, yy4) < r)))
@@ -295,7 +303,108 @@ int APIENTRY WinMain(HINSTANCE hInstance,
 			GOGI:
 				Rectangle(memoryDC, bx, by, bx + width, by + height);
 				Ellipse(memoryDC, startCx, startCy, startCx + 2 * r, startCy + 2 * r);
+			}
+			break;
+			case MODEMODE_ROTATINGBOX:
+			{
+				SelectObject(memoryDC, GetStockObject(DC_PEN));
+				SetDCPenColor(memoryDC, RGB(255, 255, 255));
 
+				static float degree = 20;
+				if (g_myInput.GetKey(VK_SPACE))
+					degree = 0;
+				else
+					degree = 20;
+				float centerAx = 200, centerAy = 200;
+				float widthA = 200, heightA = 100;
+				float centerBx = g_currentMouseX, centerBy = g_currentMouseY;
+				float widthB = 200, heightB = 100;
+				static float xA[4], yA[4], xB[4], yB[4];
+				static float gijunHX, gijunHY, gijunVX, gijunVY;
+				if (g_FirstGogigogi)
+				{
+					gijunHX = 100, gijunHY = 0;
+					gijunVX = 0, gijunVY = 100;
+					xA[0] = centerAx - widthA / 2, xA[1] = centerAx + widthA / 2, xA[2] = centerAx + widthA / 2, xA[3] = centerAx - widthA / 2;
+					yA[0] = centerAy - heightA / 2, yA[1] = centerAy - heightA / 2, yA[2] = centerAy + heightA / 2, yA[3] = centerAy + heightA / 2;
+					xB[0] = centerBx - widthB / 2, xB[1] = centerBx + widthB / 2, xB[2] = centerBx + widthB / 2, xB[3] = centerBx - widthB / 2;
+					yB[0] = centerBy - heightB / 2, yB[1] = centerBy - heightB / 2, yB[2] = centerBy + heightB / 2, yB[3] = centerBy + heightB / 2;
+
+					g_gogigogiX = g_currentMouseX, g_gogigogiY = g_currentMouseY;
+					g_FirstGogigogi = false;
+
+				}
+				//center와의 상대좌표
+
+				for (auto& i : xB)
+					i -= (g_gogigogiX - g_currentMouseX);
+				for (auto& i : yB)
+					i -= (g_gogigogiY - g_currentMouseY);
+
+				//현재마우스좌표를 저장
+				g_gogigogiX = g_currentMouseX, g_gogigogiY = g_currentMouseY;
+
+				{
+					float radian = degree*dt*M_PI / 180;
+					float tHX = gijunHX, tHY = gijunHY;
+					gijunHX = tHX*cos(radian) - tHY*sin(radian);
+					gijunHY = tHX*sin(radian) + tHY*cos(radian);
+
+					float tVX = gijunVX, tVY = gijunVY;
+					gijunVX = tVX*cos(radian) - tVY*sin(radian);
+					gijunVY = tVX*sin(radian) + tVY*cos(radian);
+				}
+
+				auto rotatePoint = [](float x[], float y[], float centerX, float centerY, float degree){
+					for (int i = 0; i < 4; ++i)
+					{
+						float radian = degree*M_PI / 180;
+						float temp_x = x[i], temp_y = y[i];
+						x[i] = (temp_x - centerX)*cos(radian) - (temp_y - centerY)*sin(radian) + centerX;
+						y[i] = (temp_x - centerX)*sin(radian) + (temp_y - centerY)*cos(radian) + centerY;
+					}
+				};
+
+				rotatePoint(xA, yA, centerAx, centerAy, degree*dt);
+				rotatePoint(xB, yB, centerBx, centerBy, degree*dt);
+
+
+
+
+				
+
+
+				float xmA[4], ymA[4], xmB[4], ymB[4];
+				//memcpy(xmA, xA, sizeof(xmA)); memcpy(ymA, yA, sizeof(ymA)); memcpy(xmB, xB, sizeof(xmB)); memcpy(ymB, yB, sizeof(ymB));
+				for (int i = 0; i < 4; ++i)
+				{
+					xmA[i] = (gijunHX*xA[i] - gijunHY*yA[i]) / (sqrt(pow(gijunHX, 2) + pow(gijunHY, 2)));
+					xmB[i] = (gijunHX*xB[i] - gijunHY*yB[i]) / (sqrt(pow(gijunHX, 2) + pow(gijunHY, 2)));
+
+
+					ymA[i] = (gijunVX*xA[i] - gijunVY*yA[i]) / (sqrt(pow(gijunVX, 2) + pow(gijunVY, 2)));
+					ymB[i] = (gijunVX*xB[i] - gijunVY*yB[i]) / (sqrt(pow(gijunVX, 2) + pow(gijunVY, 2)));
+				}				//충돌시
+				if (((xmA[0] - xmB[0]) >= -widthA && (xmA[0] - xmB[0]) <= widthB) && ((ymB[0] - ymA[0]) >= -heightB && (ymB[0] - ymA[0]) <= heightA))
+				{
+					SelectObject(memoryDC, GetStockObject(DC_PEN));
+
+					SetDCPenColor(memoryDC, RGB(255, 0, 0));
+				}
+				for (int i = 0; i < 4; ++i)
+				{
+					MoveToEx(memoryDC, xA[i], yA[i], nullptr);
+					LineTo(memoryDC, xA[(i + 1) % 4], yA[(i + 1) % 4]);
+				}
+				for (int i = 0; i < 4; ++i)
+				{
+					MoveToEx(memoryDC, xB[i], yB[i], nullptr);
+					LineTo(memoryDC, xB[(i + 1) % 4], yB[(i + 1) % 4]);
+				}
+				MoveToEx(memoryDC, 0, 0, nullptr);
+				LineTo(memoryDC, gijunHX, gijunHY);
+				MoveToEx(memoryDC, 0, 0, nullptr);
+				LineTo(memoryDC, gijunVX, gijunVY);
 			}
 			break;
 			}//end of switch
